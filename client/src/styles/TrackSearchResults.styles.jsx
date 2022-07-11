@@ -4,7 +4,6 @@ export const ResultContainer = styled.div`
   display: flex;
   align-items: center;
   margin: 2rem;
-  cursor: pointer;
 `;
 
 export const ResultImage = styled.img`
@@ -17,9 +16,9 @@ export const SongContainer = styled.div`
 `;
 
 export const TitleText = styled.p`
-  color: #fff;
+  // color: #fff;
 `;
 
 export const ArtistText = styled.p`
-  color: #f5f5f5;
+  // color: #f5f5f5;
 `;

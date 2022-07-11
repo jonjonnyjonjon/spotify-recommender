@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box } from '@chakra-ui/react';
 
 import {
   ResultContainer,
@@ -8,20 +9,33 @@ import {
   ArtistText,
 } from './styles/TrackSearchResults.styles';
 
-const TrackSearchResult = ({ track, chooseTrack }) => {
-  function handlePlay() {
-    chooseTrack(track);
-  }
+import { AiFillPlayCircle } from 'react-icons/ai'
 
-  return (
-    <ResultContainer onClick={handlePlay}>
-      <ResultImage src={track.albumUrl} />
-      <SongContainer>
-        <TitleText>{track.title}</TitleText>
-        <ArtistText>{track.artist}</ArtistText>
-      </SongContainer>
-    </ResultContainer>
-  );
+const TrackSearchResult = ({ track, current, setPlayingTrack }) => {
+	function playTrack() {
+    console.log(track.preview_url);
+    current.pause();
+    current.currentTime = 0;
+    const newTrack = new Audio(track.preview_url);
+    newTrack.play();
+    setPlayingTrack(newTrack);
+	}
+
+	return (
+		<ResultContainer>
+			<ResultImage src={track.album.images[0].url} />
+			<SongContainer>
+				<TitleText>{track.name}</TitleText>
+				<ArtistText>{track.artists[0].name}</ArtistText>
+			</SongContainer>
+			<Box>
+				<AiFillPlayCircle
+					style={{ cursor: "pointer" }}
+					onClick={() => playTrack()}
+				/>
+			</Box>
+		</ResultContainer>
+	);
 };
 
 export default TrackSearchResult;

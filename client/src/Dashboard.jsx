@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, usePrevious } from "react";
 
 import useAuth from './hooks/useAuth';
 import Player from './Player';
@@ -7,11 +7,11 @@ import SpotifyWebApi from 'spotify-web-api-node';
 import axios from 'axios';
 import {
   DashBoardContainer,
-  SearchInput,
   ResultsContainer,
-  LyricsContainer,
   PlayerContainer,
 } from './styles/Dashboard.styles';
+import { Box, Text } from '@chakra-ui/react';
+import SongFields from "./SongFields";
 
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.REACT_APP_CLIENT_ID,
@@ -19,94 +19,58 @@ const spotifyApi = new SpotifyWebApi({
 
 const Dashboard = ({ code }) => {
   const accessToken = useAuth(code);
-  const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [playingTrack, setPlayingTrack] = useState();
-  const [lyrics, setLyrics] = useState('');
+  const [playingTrack, setPlayingTrack] = useState(new Audio(''));
 
-  function chooseTrack(track) {
-    setPlayingTrack(track);
-    setSearch('');
-    setLyrics('');
-  }
+  const [minEnergy, setMinEnergy] = useState(0.5);
+  const [minDanceability, setMinDanceability] = useState(0.5);
 
   useEffect(() => {
-    if (!playingTrack) return;
+		if (!accessToken) return;
+		spotifyApi.setAccessToken(accessToken);
+		spotifyApi
+			.getRecommendations({
+				min_energy: minEnergy,
+				seed_artists: ["6mfK6Q2tzLMEchAr0e9Uzu", "4DYFVNKZ1uixa6SQTvzQwJ"],
+				min_danceability: minDanceability,
+			})
+			.then(
+				(data) => {
+					let recommendations = data.body.tracks;
+          // console.log(recommendations);
+					setSearchResults(recommendations);
+				},
+				function (err) {
+					console.log("Something went wrong!", err);
+				}
+			);
+	}, [accessToken, minEnergy, minDanceability]);
 
-    (async () => {
-      const {
-        data: { lyrics },
-      } = await axios.get(`${process.env.REACT_APP_BASE_URL}/lyrics`, {
-        params: {
-          track: playingTrack.title,
-          artist: playingTrack.artist,
-        },
-      });
-      setLyrics(lyrics);
-    })();
-  }, [playingTrack]);
-
-  useEffect(() => {
-    if (!accessToken) return;
-    spotifyApi.setAccessToken(accessToken);
-  }, [accessToken]);
-
-  useEffect(() => {
-    if (!search) return setSearchResults([]);
-    if (!accessToken) return;
-
-    let cancel = false;
-    (async () => {
-      const { body } = await spotifyApi.searchTracks(search);
-      if (cancel) return;
-      setSearchResults(
-        body.tracks.items.map((track) => {
-          const smallestAlbumImage = track.album.images.reduce(
-            (smallest, image) => {
-              if (image.height < smallest.height) return image;
-              return smallest;
-            },
-            track.album.images[0]
-          );
-
-          return {
-            artist: track.artists[0].name,
-            title: track.name,
-            uri: track.uri,
-            albumUrl: smallestAlbumImage.url,
-          };
-        })
-      );
-    })();
-
-    return () => (cancel = true);
-  }, [search, accessToken]);
 
   return (
-    <DashBoardContainer>
-      <SearchInput
-        type="search"
-        placeholder="Search Songs/Artists"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      <ResultsContainer>
-        {searchResults.map((track) => (
-          <TrackSearchResult
-            track={track}
-            key={track.uri}
-            chooseTrack={chooseTrack}
-          />
-        ))}
-        {searchResults.length === 0 && (
-          <LyricsContainer>{lyrics}</LyricsContainer>
-        )}
-      </ResultsContainer>
-      <PlayerContainer>
-        <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-      </PlayerContainer>
-    </DashBoardContainer>
-  );
+		<Box m={10}>
+			<Box>
+				<Text>Dashboard page</Text>
+			</Box>
+			<Box>
+				<SongFields
+					fieldValues={[minEnergy, minDanceability]}
+					setFn={[setMinEnergy, setMinDanceability]}
+				/>
+			</Box>
+
+			<ResultsContainer>
+				{searchResults.map((track) => (
+					<TrackSearchResult
+						track={track}
+						key={track.uri}
+            current={playingTrack}
+						setPlayingTrack={setPlayingTrack}
+					/>
+				))}
+			</ResultsContainer>
+		</Box>
+	);
 };
 
 export default Dashboard;
