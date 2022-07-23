@@ -1,24 +1,23 @@
-import React from 'react';
-import { Box } from '@chakra-ui/react';
+import React from "react";
+import { Box } from "@chakra-ui/react";
 
 import {
-  ResultContainer,
-  ResultImage,
-  SongContainer,
-  TitleText,
-  ArtistText,
-} from './styles/TrackSearchResults.styles';
+	ResultContainer,
+	ResultImage,
+	SongContainer,
+	TitleText,
+	ArtistText,
+} from "./styles/TrackSearchResults.styles";
 
-import { AiFillPlayCircle } from 'react-icons/ai'
+import { AiFillPlayCircle } from "react-icons/ai";
 
 const TrackSearchResult = ({ track, current, setPlayingTrack }) => {
 	function playTrack() {
-    console.log(track.preview_url);
-    current.pause();
-    current.currentTime = 0;
-    const newTrack = new Audio(track.preview_url);
-    newTrack.play();
-    setPlayingTrack(newTrack);
+		current.pause();
+		current.currentTime = 0;
+		const newTrack = new Audio(track.preview_url);
+		newTrack.play();
+		setPlayingTrack(newTrack);
 	}
 
 	return (

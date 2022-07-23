@@ -1,31 +1,38 @@
-import React, { useState, useEffect, usePrevious } from "react";
-
-import useAuth from './hooks/useAuth';
-import Player from './Player';
-import TrackSearchResult from './TrackSearchResult';
-import SpotifyWebApi from 'spotify-web-api-node';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import useAuth from "./hooks/useAuth";
+import TrackSearchResult from "./TrackSearchResult";
+import SpotifyWebApi from "spotify-web-api-js";
+import { ResultsContainer } from "./styles/Dashboard.styles";
 import {
-  DashBoardContainer,
-  ResultsContainer,
-  PlayerContainer,
-} from './styles/Dashboard.styles';
-import { Box, Text } from '@chakra-ui/react';
+	Avatar,
+	Box,
+	HStack,
+	Image,
+	Input,
+	Tag,
+	TagLabel,
+	Text,
+	VStack,
+} from "@chakra-ui/react";
 import SongFields from "./SongFields";
 
-const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.REACT_APP_CLIENT_ID,
-});
+// const spotifyApi = new SpotifyWebApi({
+// 	clientId: process.env.REACT_APP_CLIENT_ID,
+// });
+
+var spotifyApi = new SpotifyWebApi();
 
 const Dashboard = ({ code }) => {
-  const accessToken = useAuth(code);
-  const [searchResults, setSearchResults] = useState([]);
-  const [playingTrack, setPlayingTrack] = useState(new Audio(''));
+	const accessToken = useAuth(code);
+	const [searchResults, setSearchResults] = useState([]);
+	const [playingTrack, setPlayingTrack] = useState(new Audio(""));
+	const [searchArtist, setSearchArtist] = useState("");
+	const [seedArtists, setSeedArtists] = useState([]);
+	const [searchArtistResult, setSearchArtistResult] = useState([]);
+	const [minEnergy, setMinEnergy] = useState(0.5);
+	const [minDanceability, setMinDanceability] = useState(0.5);
 
-  const [minEnergy, setMinEnergy] = useState(0.5);
-  const [minDanceability, setMinDanceability] = useState(0.5);
-
-  useEffect(() => {
+	useEffect(() => {
 		if (!accessToken) return;
 		spotifyApi.setAccessToken(accessToken);
 		spotifyApi
@@ -36,8 +43,7 @@ const Dashboard = ({ code }) => {
 			})
 			.then(
 				(data) => {
-					let recommendations = data.body.tracks;
-          // console.log(recommendations);
+					let recommendations = data.tracks;
 					setSearchResults(recommendations);
 				},
 				function (err) {
@@ -46,13 +52,61 @@ const Dashboard = ({ code }) => {
 			);
 	}, [accessToken, minEnergy, minDanceability]);
 
+	const artistInputChange = (event) => {
+		if (!accessToken) return;
+		spotifyApi.setAccessToken(accessToken);
+		setSearchArtist(event.target.value);
+		if (searchArtist === "") setSearchArtistResult([]);
+		spotifyApi.searchArtists(searchArtist, { limit: 10 }).then(
+			(data) => {
+				// console.log(data.artists.items);
+				setSearchArtistResult(data.artists.items);
+			},
+			(err) => console.log(err)
+		);
+	};
 
-  return (
+	return (
 		<Box m={10}>
 			<Box>
 				<Text>Dashboard page</Text>
 			</Box>
 			<Box>
+				<Box>
+					<HStack>
+						<Text>Choose at least 1 artist: </Text>
+						{seedArtists.map((artist) => (
+							<Tag size="lg" colorScheme="red" borderRadius="full" key={artist.name}>
+								<Avatar
+									src={artist.images !== null ? artist.images[0].url : null}
+									size="xs"
+									name={artist.name}
+									ml={-1}
+									mr={2}
+								/>
+								<TagLabel>{artist.name}</TagLabel>
+							</Tag>
+						))}
+					</HStack>
+					<Input onChange={(event) => artistInputChange(event)} />
+					<VStack align="left" shadow="md">
+						{(searchArtistResult.length === 0) & (searchArtist !== "") ? (
+							<Text>No results found!</Text>
+						) : (
+							searchArtistResult.map((artist) => (
+								<HStack shadow="md">
+									<Image
+										boxSize="50px"
+										src={
+											artist.images.length !== 0 ? artist.images[0].url : null
+										}
+									/>
+									<Text>{artist.name}</Text>
+								</HStack>
+							))
+						)}
+					</VStack>
+				</Box>
 				<SongFields
 					fieldValues={[minEnergy, minDanceability]}
 					setFn={[setMinEnergy, setMinDanceability]}
@@ -64,7 +118,7 @@ const Dashboard = ({ code }) => {
 					<TrackSearchResult
 						track={track}
 						key={track.uri}
-            current={playingTrack}
+						current={playingTrack}
 						setPlayingTrack={setPlayingTrack}
 					/>
 				))}
